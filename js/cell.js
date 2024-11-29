@@ -1,24 +1,25 @@
-import { ConsoleWrapper } from './console-wrapper.js';
+import { codeBotInstance } from "./code-bot.js";
+import { ConsoleWrapper } from "./console-wrapper.js";
 
 export class Cell {
-  constructor(id, notebook, initialCode = '') {
+  constructor(id, notebook, initialCode = "") {
     this.id = id;
     this.notebook = notebook;
     this.element = this.createElement();
-    this.codeEditor = this.element.querySelector('.code-editor');
-    this.outputElement = this.element.querySelector('.output-content');
-    this.promptInput = this.element.querySelector('.prompt-input');
-    
+    this.codeEditor = this.element.querySelector(".code-editor");
+    this.outputElement = this.element.querySelector(".output-content");
+    this.promptInput = this.element.querySelector(".prompt-input");
+
     if (initialCode) {
       this.codeEditor.value = initialCode;
     }
-    
+
     this.setupEventListeners();
   }
 
   createElement() {
-    const cell = document.createElement('div');
-    cell.className = 'cell';
+    const cell = document.createElement("div");
+    cell.className = "cell";
     cell.innerHTML = `
       <div class="cell-header">
         <span class="cell-id">Cell #${this.id}</span>
@@ -42,34 +43,56 @@ export class Cell {
   }
 
   setupEventListeners() {
-    const executeButton = this.element.querySelector('.execute-btn');
-    executeButton.addEventListener('click', () => this.executeCode());
+    const executeButton = this.element.querySelector(".execute-btn");
+    executeButton.addEventListener("click", () => this.executeCode());
 
-    const generateButton = this.element.querySelector('.generate-btn');
-    generateButton.addEventListener('click', () => this.generateCode());
+    const generateButton = this.element.querySelector(".generate-btn");
+    generateButton.addEventListener("click", () => this.generateCode());
 
-    const deleteButton = this.element.querySelector('.delete-btn');
-    deleteButton.addEventListener('click', () => {
-      this.element.dispatchEvent(new CustomEvent('cellDelete', {
-        bubbles: true,
-        detail: { id: this.id }
-      }));
+    const deleteButton = this.element.querySelector(".delete-btn");
+    deleteButton.addEventListener("click", () => {
+      this.element.dispatchEvent(
+        new CustomEvent("cellDelete", {
+          bubbles: true,
+          detail: { id: this.id },
+        })
+      );
     });
   }
 
   async generateCode() {
     const prompt = this.promptInput.value.trim();
     if (prompt) {
-      const codeBot = new (await import('./code-bot.js')).CodeBot();
-      const generatedCode = codeBot.generateCode(prompt);
-      this.codeEditor.value = generatedCode;
+      const {
+        VITE_AWS_REGION,
+        VITE_BEDROCK_MODEL_ID,
+        VITE_AWS_ACCESS_KEY,
+        VITE_AWS_SECRET_KEY,
+      } = import.meta.env;
+
+      const config = {
+        region: VITE_AWS_REGION,
+        credentials: {
+          accessKeyId: VITE_AWS_ACCESS_KEY,
+          secretAccessKey: VITE_AWS_SECRET_KEY,
+        },
+      };
+
+      const codeBot = codeBotInstance;
+      try {
+        const { code, description } = await codeBot.generateCode(prompt);
+        this.codeEditor.value = code;
+        this.outputElement.textContent = `Code generated successfully:\n${description}`;
+      } catch (error) {
+        this.outputElement.textContent = `Error generating code: ${error.message}`;
+      }
     }
   }
 
   formatOutput(value) {
-    if (value === undefined) return 'undefined';
-    if (value === null) return 'null';
-    if (typeof value === 'function') return value.toString();
+    if (value === undefined) return "undefined";
+    if (value === null) return "null";
+    if (typeof value === "function") return value.toString();
     try {
       return JSON.stringify(value, null, 2);
     } catch (error) {
@@ -82,21 +105,21 @@ export class Cell {
     try {
       const code = this.codeEditor.value;
       const result = await this.notebook.executeInContext(code);
-      
+
       // Get console output
       const consoleOutput = consoleWrapper.getLogs();
-      
+
       // Format the final output
-      let output = '';
+      let output = "";
       if (consoleOutput) {
         output += consoleOutput;
       }
       if (result !== undefined) {
-        if (output) output += '\n\n';
+        if (output) output += "\n\n";
         output += `Return value: ${this.formatOutput(result)}`;
       }
-      
-      this.outputElement.textContent = output || 'No output';
+
+      this.outputElement.textContent = output || "No output";
     } catch (error) {
       this.outputElement.textContent = `Error: ${error.message}`;
     } finally {
