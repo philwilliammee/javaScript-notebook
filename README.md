@@ -80,3 +80,8 @@ interface SharedContext {
 }
 
 ```
+
+example prompts:
+
+Solve and chart the equation: x² + 5x - 6 = 0
+

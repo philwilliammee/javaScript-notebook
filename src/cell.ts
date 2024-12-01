@@ -185,7 +185,6 @@ export class Cell {
     try {
       const code = this.codeEditor?.getValue() || "";
       const result = await this.notebook.executeInContext(code);
-
       const consoleOutput = consoleWrapper.getLogs();
 
       let output = "";
