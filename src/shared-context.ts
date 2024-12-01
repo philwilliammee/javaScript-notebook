@@ -1,13 +1,18 @@
 export class SharedContext {
-  context: Object;
+  private context: Record<string, any>;
+
   constructor() {
     this.context = {};
   }
 
-  evaluate(code: string) {
+  evaluate(code: string): any {
     try {
-      // Create a function that will execute in the context
+      // Validate the code syntax before execution
+      this.validateCode(code);
+
+      // Create a function to execute code within the current context
       const executeInContext = new Function(...Object.keys(this.context), `
+        "use strict";
         try {
           ${code}
         } catch (error) {
@@ -15,34 +20,48 @@ export class SharedContext {
         }
       `);
 
-      // Execute the code with the context variables as arguments
+      // Execute the code with the current context values as arguments
       const result = executeInContext(...Object.values(this.context));
 
-      // Extract any new variables defined in the code
-      const newVars = {};
-      const varExtractor = new Function(...Object.keys(this.context), `
-        ${code}
-        return { ${this.extractVariableNames(code).join(', ')} };
-      `);
-
-      try {
-        Object.assign(newVars, varExtractor(...Object.values(this.context)));
-      } catch (e) {
-        // If variable extraction fails, we still want to continue
-        console.warn('Variable extraction warning:', e);
-      }
-
-      // Update the context with new variables
-      Object.assign(this.context, newVars);
+      // Update the context with new variables defined in the code
+      this.updateContext(code);
 
       return result;
     } catch (error: any) {
+      console.error('Error during evaluation:', error);
+      console.error('Code:', code);
       throw new Error(`Execution error: ${error.message}`);
     }
   }
 
-  // Extract variable names from the code and return them as an array
-  extractVariableNames(code: string ): string[] {
+  private validateCode(code: string): void {
+    try {
+      // Use Function constructor to validate syntax
+      new Function(code);
+    } catch (error : any) {
+      throw new Error(`Syntax error in code: ${error.message}`);
+    }
+  }
+
+  private updateContext(code: string): void {
+    const newVars: Record<string, any> = {};
+    const varExtractor = new Function(...Object.keys(this.context), `
+      "use strict";
+      ${code}
+      return { ${this.extractVariableNames(code).join(', ')} };
+    `);
+
+    try {
+      Object.assign(newVars, varExtractor(...Object.values(this.context)));
+    } catch (error) {
+      console.warn('Variable extraction warning:', error);
+    }
+
+    // Merge new variables into the context
+    Object.assign(this.context, newVars);
+  }
+
+  extractVariableNames(code: string): string[] {
     const variablePattern = /(?:let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
     const functionPattern = /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
     const variables = new Set<string>();
@@ -58,7 +77,7 @@ export class SharedContext {
     return Array.from(variables);
   }
 
-  getContext() {
+  getContext(): Record<string, any> {
     return this.context;
   }
 }

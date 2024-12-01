@@ -1,8 +1,5 @@
 import { BedrockService } from "./bedrock/bedrock.service";
 
-/**
- * CodeBot class to generate JavaScript code using AWS Bedrock.
- */
 export class CodeBot {
   private bedrockService: BedrockService;
   private modelId: string;
@@ -18,10 +15,20 @@ export class CodeBot {
       - "code": The JavaScript code as a string.
       - "description": A brief description of what the code does.
 
-      Example response:
+      Optional Feature: If the user requests a chart, generate code that uses the Google Charts library to create and display the specified chart. Ensure the code:
+      - Dynamically appends the chart to a div with a specific ID (e.g., 'myChart').
+      - Includes sample data and configuration.
+
+      Example response for a non-chart request:
       {
         "code": "console.log('Hello, World!');",
         "description": "This code logs 'Hello, World!' to the console."
+      }
+
+      Example response for a chart request:
+      {
+        "code": "google.charts.load('current', {packages:['corechart']});\\ngoogle.charts.setOnLoadCallback(() => {\\n  const data = google.visualization.arrayToDataTable([\\n    ['Task', 'Hours per Day'],\\n    ['Work', 8],\\n    ['Eat', 2],\\n    ['Commute', 1],\\n    ['Watch TV', 3],\\n    ['Sleep', 7]\\n  ]);\\n  const options = { title: 'Daily Activities' };\\n  const chart = new google.visualization.PieChart(document.getElementById('myChart'));\\n  chart.draw(data, options);\\n});",
+        "description": "This code creates a Pie Chart using Google Charts to visualize daily activities."
       }
     `;
   }
@@ -78,7 +85,6 @@ export const codeBotInstance = new CodeBot({
   },
 });
 
-
 interface ClaudeRequestBody {
   anthropic_version: string;
   max_tokens: number;
@@ -96,7 +102,6 @@ interface Content {
   text: string;
   type: string;
 }
-
 
 interface BedRockConfig {
   region: string;

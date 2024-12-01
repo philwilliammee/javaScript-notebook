@@ -139,12 +139,45 @@ h1 {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
+.monaco-editor-wrapper {
+  position: relative;
+  margin-bottom: 0.5rem;
+}
+
 .monaco-editor-container {
   min-height: 200px;
-  /* margin-bottom: 0.5rem;
   border-radius: 0.375rem;
-  overflow: hidden; */
+  overflow: hidden;
+}
 
+.resize-handle {
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: row-resize;
+  z-index: 10;
+  padding: 4px 0;
+  transition: opacity 0.2s;
+  opacity: 0;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+  opacity: 1;
+}
+
+.resize-handle-line {
+  width: 30px;
+  height: 1px;
+  background-color: #94a3b8;
+  border-radius: 1px;
 }
 
 .output {

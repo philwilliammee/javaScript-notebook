@@ -13,6 +13,8 @@ export class Cell {
   private buttonSpinner: ButtonSpinner | null = null;
   element: HTMLElement;
   private isGenerating: boolean = false;
+  private editorContainer: HTMLElement | null = null;
+  private resizeHandle: HTMLElement | null = null;
 
   constructor(id: number, notebook: Notebook, initialCode: string = "") {
     this.id = id;
@@ -20,13 +22,14 @@ export class Cell {
     this.element = this.createElement();
     this.outputElement = this.element.querySelector(".output-content") as HTMLElement;
     this.promptInput = this.element.querySelector(".prompt-input") as HTMLInputElement;
+    this.editorContainer = this.element.querySelector(".monaco-editor-container") as HTMLElement;
+    this.resizeHandle = this.element.querySelector(".resize-handle") as HTMLElement;
 
     const generateButton = this.element.querySelector(".generate-btn") as HTMLButtonElement;
     this.buttonSpinner = new ButtonSpinner(generateButton);
 
-    const editorContainer = this.element.querySelector(".monaco-editor-container") as HTMLElement;
     this.codeEditor = new MonacoEditor(
-      editorContainer,
+      this.editorContainer,
       initialCode,
       (value: string) => {
         // Handle onChange if needed
@@ -34,6 +37,7 @@ export class Cell {
     );
 
     this.setupEventListeners();
+    this.setupResizeHandle();
   }
 
   private createElement(): HTMLElement {
@@ -45,13 +49,20 @@ export class Cell {
         <button class="delete-btn">Delete</button>
       </div>
       <div class="prompt-section">
-        <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="Calculate and print Fibonacci sequence">
+        <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="">
         <button class="btn btn-green generate-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
           Generate Code
         </button>
       </div>
-      <div class="monaco-editor-container"></div>
+      <div class="monaco-editor-wrapper">
+        <div class="monaco-editor-container"></div>
+        <div class="resize-handle">
+          <div class="resize-handle-line"></div>
+          <div class="resize-handle-line"></div>
+          <div class="resize-handle-line"></div>
+        </div>
+      </div>
       <button class="btn btn-blue execute-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         Execute
@@ -62,6 +73,42 @@ export class Cell {
       </div>
     `;
     return cell;
+  }
+
+  private setupResizeHandle(): void {
+    if (!this.resizeHandle || !this.editorContainer) return;
+
+    let startY = 0;
+    let startHeight = 0;
+
+    const onMouseDown = (e: MouseEvent) => {
+      startY = e.clientY;
+      startHeight = this.editorContainer!.offsetHeight;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = 'row-resize';
+      this.resizeHandle!.classList.add('active');
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!this.editorContainer) return;
+      const newHeight = startHeight + (e.clientY - startY);
+      if (newHeight >= 100) { // Minimum height
+        this.editorContainer.style.height = `${newHeight}px`;
+        if (this.codeEditor) {
+          this.codeEditor.layout();
+        }
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      this.resizeHandle!.classList.remove('active');
+    };
+
+    this.resizeHandle.addEventListener('mousedown', onMouseDown);
   }
 
   private setupEventListeners(): void {

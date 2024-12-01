@@ -124,4 +124,10 @@ export class MonacoEditor {
       this.editor.dispose();
     }
   }
+
+  public layout() {
+    if (this.editor) {
+      this.editor.layout();
+    }
+  }
 }
