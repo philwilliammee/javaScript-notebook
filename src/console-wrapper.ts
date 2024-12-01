@@ -6,7 +6,7 @@ export class ConsoleWrapper {
   constructor() {
     this.logs = [];
     if (!ConsoleWrapper.isOverridden) {
-      console.info('ConsoleWrapper: Overriding console methods');
+      console.info('ConsoleWrapper: Overriding console methods this is mostly for errors and warnings');
       this.setupConsoleOverrides();
       ConsoleWrapper.isOverridden = true;
     }
@@ -17,12 +17,11 @@ export class ConsoleWrapper {
   }
 
   getLogs(): string {
-    console.info('getLogs', this.logs);
     return this.logs.join('\n');
   }
 
   private setupConsoleOverrides(): void {
-    const methods: Array<keyof Console> = ['log', 'warn', 'error'];
+    const methods: Array<keyof Console> = ['log', 'info', 'warn', 'error'];
 
     methods.forEach((method) => {
       // Save the original console method only once
@@ -50,7 +49,7 @@ export class ConsoleWrapper {
   }
 
   restore(): void {
-    const methods: Array<keyof Console> = ['log', 'warn', 'error'];
+    const methods: Array<keyof Console> = ['log', 'info', 'warn', 'error'];
     methods.forEach((method) => {
       if (ConsoleWrapper.originalConsole[method]) {
         console[method] = ConsoleWrapper.originalConsole[method];
