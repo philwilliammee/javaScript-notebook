@@ -1,26 +1,37 @@
 import { codeBotInstance } from "./code-bot";
 import { ConsoleWrapper } from "./console-wrapper";
 import { Notebook } from "./notebook";
+import { MonacoEditor } from "./components/MonacoEditor";
+import { ButtonSpinner } from "./components/ButtonSpinner";
 
 export class Cell {
   private id: number;
   private notebook: Notebook;
-  private codeEditor: HTMLTextAreaElement | null;
+  private codeEditor: MonacoEditor | null = null;
   private outputElement: HTMLElement | null;
   private promptInput: HTMLInputElement | null;
+  private buttonSpinner: ButtonSpinner | null = null;
   element: HTMLElement;
+  private isGenerating: boolean = false;
 
   constructor(id: number, notebook: Notebook, initialCode: string = "") {
     this.id = id;
     this.notebook = notebook;
     this.element = this.createElement();
-    this.codeEditor = this.element.querySelector(".code-editor") as HTMLTextAreaElement;
     this.outputElement = this.element.querySelector(".output-content") as HTMLElement;
     this.promptInput = this.element.querySelector(".prompt-input") as HTMLInputElement;
 
-    if (initialCode) {
-      this.codeEditor.value = initialCode;
-    }
+    const generateButton = this.element.querySelector(".generate-btn") as HTMLButtonElement;
+    this.buttonSpinner = new ButtonSpinner(generateButton);
+
+    const editorContainer = this.element.querySelector(".monaco-editor-container") as HTMLElement;
+    this.codeEditor = new MonacoEditor(
+      editorContainer,
+      initialCode,
+      (value: string) => {
+        // Handle onChange if needed
+      }
+    );
 
     this.setupEventListeners();
   }
@@ -35,9 +46,12 @@ export class Cell {
       </div>
       <div class="prompt-section">
         <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="Calculate and print Fibonacci sequence">
-        <button class="btn btn-green generate-btn">Generate Code</button>
+        <button class="btn btn-green generate-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
+          Generate Code
+        </button>
       </div>
-      <textarea class="code-editor" placeholder="Enter your JavaScript code here..."></textarea>
+      <div class="monaco-editor-container"></div>
       <button class="btn btn-blue execute-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         Execute
@@ -68,29 +82,32 @@ export class Cell {
     });
   }
 
+  private setLoading(loading: boolean) {
+    this.isGenerating = loading;
+    const generateButton = this.element.querySelector(".generate-btn") as HTMLButtonElement;
+    const executeButton = this.element.querySelector(".execute-btn") as HTMLButtonElement;
+
+    if (loading) {
+      this.buttonSpinner?.show();
+      generateButton.disabled = true;
+      executeButton.disabled = true;
+      if (this.promptInput) this.promptInput.disabled = true;
+    } else {
+      this.buttonSpinner?.hide();
+      generateButton.disabled = false;
+      executeButton.disabled = false;
+      if (this.promptInput) this.promptInput.disabled = false;
+    }
+  }
+
   private async generateCode(): Promise<void> {
     const prompt = this.promptInput?.value.trim();
-    if (prompt) {
-      const {
-        VITE_AWS_REGION,
-        VITE_BEDROCK_MODEL_ID,
-        VITE_AWS_ACCESS_KEY,
-        VITE_AWS_SECRET_KEY,
-      } = import.meta.env;
-
-      const config = {
-        region: VITE_AWS_REGION,
-        credentials: {
-          accessKeyId: VITE_AWS_ACCESS_KEY,
-          secretAccessKey: VITE_AWS_SECRET_KEY,
-        },
-      };
-
-      const codeBot = codeBotInstance;
+    if (prompt && !this.isGenerating) {
+      this.setLoading(true);
       try {
-        const { code, description } = await codeBot.generateCode(prompt);
+        const { code, description } = await codeBotInstance.generateCode(prompt);
         if (this.codeEditor) {
-          this.codeEditor.value = code;
+          this.codeEditor.setValue(code);
         }
         if (this.outputElement) {
           this.outputElement.textContent = `Code generated successfully:\n${description}`;
@@ -99,6 +116,8 @@ export class Cell {
         if (this.outputElement) {
           this.outputElement.textContent = `Error generating code: ${error.message}`;
         }
+      } finally {
+        this.setLoading(false);
       }
     }
   }
@@ -117,13 +136,11 @@ export class Cell {
   private async executeCode(): Promise<void> {
     const consoleWrapper = new ConsoleWrapper();
     try {
-      const code = this.codeEditor?.value || "";
+      const code = this.codeEditor?.getValue() || "";
       const result = await this.notebook.executeInContext(code);
 
-      // Get console output
       const consoleOutput = consoleWrapper.getLogs();
 
-      // Format the final output
       let output = "";
       if (consoleOutput) {
         output += consoleOutput;
@@ -142,6 +159,12 @@ export class Cell {
       }
     } finally {
       consoleWrapper.restore();
+    }
+  }
+
+  public dispose() {
+    if (this.codeEditor) {
+      this.codeEditor.dispose();
     }
   }
 }
