@@ -16,7 +16,7 @@ export class CodeBot {
       - "description": A brief description of what the code does.
 
       Optional Feature: If the user requests a chart, generate code that uses the Google Charts library to create and display the specified chart. Ensure the code:
-      - Dynamically appends the chart to a div with a specific ID (e.g., 'myChart').
+      - Dynamically appends the chart to a div with a specific ID (e.g., 'myChart'), do not set width to this chart as it is set to 100% of its parent container by default.
       - Includes sample data and configuration.
 
       Example response for a non-chart request:

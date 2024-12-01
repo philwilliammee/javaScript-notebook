@@ -38,21 +38,40 @@ export class SharedContext {
     try {
       // Use Function constructor to validate syntax
       new Function(code);
-    } catch (error : any) {
+    } catch (error: any) {
       throw new Error(`Syntax error in code: ${error.message}`);
     }
   }
 
   private updateContext(code: string): void {
     const newVars: Record<string, any> = {};
-    const varExtractor = new Function(...Object.keys(this.context), `
+
+    const variableNames = this.extractVariableNames(code).join(', ');
+
+    // Include 'console' as an additional parameter
+    const varExtractor = new Function(...Object.keys(this.context), 'console', `
       "use strict";
       ${code}
-      return { ${this.extractVariableNames(code).join(', ')} };
+      return { ${variableNames} };
     `);
 
     try {
-      Object.assign(newVars, varExtractor(...Object.values(this.context)));
+      // Create a dummy console object to suppress output
+      const dummyConsole = {
+        log: () => {},
+        warn: () => {},
+        error: () => {},
+        info: () => {},
+        debug: () => {},
+        trace: () => {},
+        dir: () => {},
+        time: () => {},
+        timeEnd: () => {},
+        assert: () => {},
+        // Add other console methods if necessary
+      };
+
+      Object.assign(newVars, varExtractor(...Object.values(this.context), dummyConsole));
     } catch (error) {
       console.warn('Variable extraction warning:', error);
     }

@@ -85,3 +85,4 @@ example prompts:
 
 Solve and chart the equation: x² + 5x - 6 = 0
 
+generate an example "function" chart with a height of 400.
