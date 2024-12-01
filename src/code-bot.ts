@@ -1,4 +1,4 @@
-import { BedrockService } from "./bedrock/bedrock.service";
+import { BedRockConfig, BedrockService, ClaudeRequestBody, Message } from "./bedrock/bedrock.service";
 
 export class CodeBot {
   private bedrockService: BedrockService;
@@ -6,7 +6,6 @@ export class CodeBot {
   private systemPrompt: string;
 
   constructor(config: BedRockConfig) {
-    console.log(config);
     this.bedrockService = new BedrockService(config);
     this.modelId = config.modelId; // AWS Bedrock model ID from Vite env.
     this.systemPrompt = `
@@ -84,31 +83,3 @@ export const codeBotInstance = new CodeBot({
     sessionToken: import.meta.env.VITE_AWS_SESSION_TOKEN,
   },
 });
-
-interface ClaudeRequestBody {
-  anthropic_version: string;
-  max_tokens: number;
-  system?: string;
-  messages: Message[];
-  temperature?: number;
-}
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: Content[];
-}
-
-interface Content {
-  text: string;
-  type: string;
-}
-
-interface BedRockConfig {
-  region: string;
-  modelId: string;
-  credentials: {
-    accessKeyId: string;
-    secretAccessKey: string;
-    sessionToken: string;
-  };
-}

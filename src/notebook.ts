@@ -6,12 +6,14 @@ export class Notebook {
   private cells: Map<number, Cell>;
   private nextId: number;
   private sharedContext: SharedContext;
+  private files: Map<string, any>; // Shared file store
 
   constructor(containerId: string) {
     this.container = document.getElementById(containerId);
     this.cells = new Map();
     this.nextId = 1;
     this.sharedContext = new SharedContext();
+    this.files = new Map(); // Initialize file store
 
     this.setupEventListeners();
     this.addInitialCell();
@@ -31,16 +33,7 @@ export class Notebook {
   }
 
   private addInitialCell(): void {
-    const initialCode = `// Example: Calculate and print Fibonacci sequence
-function fibonacci(n) {
-  if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
-}
-
-// Calculate and print first 10 Fibonacci numbers
-var fibNumbers = Array.from({ length: 10 }, (_, i) => fibonacci(i));
-`;
-    this.addCell(initialCode);
+    this.addCell("// Write your code here...");
   }
 
   private addCell(initialCode: string = ''): void {
@@ -62,5 +55,24 @@ var fibNumbers = Array.from({ length: 10 }, (_, i) => fibonacci(i));
 
   public async executeInContext(code: string): Promise<any> {
     return this.sharedContext.evaluate(code);
+  }
+
+  public addFileToContext(name: string, data: any): void {
+    const variableName = `file_${name.replace(/[^a-zA-Z0-9]/g, '_')}`; // Safe variable name
+    this.sharedContext.evaluate(`var ${variableName} = ${JSON.stringify(data)};`);
+  }
+
+
+  // File management methods
+  public addFile(name: string, data: any): void {
+    this.files.set(name, data);
+  }
+
+  public getFile(name: string): any | undefined {
+    return this.files.get(name);
+  }
+
+  public listFiles(): string[] {
+    return Array.from(this.files.keys());
   }
 }
