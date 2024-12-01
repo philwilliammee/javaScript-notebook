@@ -1,15 +1,14 @@
-import { BedrockService } from "./bedrock/bedrock.service.js";
+import { BedrockService } from "./bedrock/bedrock.service";
 
 /**
  * CodeBot class to generate JavaScript code using AWS Bedrock.
  */
 export class CodeBot {
-  /**
-   * @param {object} config - Configuration for the BedrockService.
-   * @param {string} config.region - AWS region for Bedrock.
-   * @param {string} [config.endpoint] - Optional custom endpoint for Bedrock.
-   */
-  constructor(config) {
+  private bedrockService: BedrockService;
+  private modelId: string;
+  private systemPrompt: string;
+
+  constructor(config: BedRockConfig) {
     console.log(config);
     this.bedrockService = new BedrockService(config);
     this.modelId = config.modelId; // AWS Bedrock model ID from Vite env.
@@ -27,19 +26,12 @@ export class CodeBot {
     `;
   }
 
-  /**
-   * Generates code based on the provided user prompt.
-   *
-   * @param {string} userPrompt - The user's prompt for generating code.
-   * @returns {Promise<{code: string, description: string}>} - Generated code and description.
-   */
-  async generateCode(userPrompt) {
+  async generateCode(userPrompt: string): Promise<{ code: string; description: string }> {
     if (!userPrompt) {
       throw new Error("Prompt cannot be empty.");
     }
 
-    /** @type {ClaudeRequestBody} */
-    const payload = {
+    const payload: ClaudeRequestBody = {
       anthropic_version: "bedrock-2023-05-31",
       system: this.systemPrompt,
       messages: [
@@ -53,10 +45,7 @@ export class CodeBot {
     };
 
     try {
-      const response = await this.bedrockService.invokeModel(
-        this.modelId,
-        payload
-      );
+      const response = await this.bedrockService.invokeModel(this.modelId, payload);
 
       console.log(response);
 
@@ -67,9 +56,7 @@ export class CodeBot {
       const parsedResponse = JSON.parse(response.content[0].text);
 
       if (!parsedResponse.code || !parsedResponse.description) {
-        throw new Error(
-          'Response does not include required fields: "code" and "description".'
-        );
+        throw new Error('Response does not include required fields: "code" and "description".');
       }
 
       return parsedResponse;
@@ -91,22 +78,32 @@ export const codeBotInstance = new CodeBot({
   },
 });
 
-/**
- * @typedef {object} ClaudeRequestBody
- * @property {string} anthropic_version - Version of the Anthropic API.
- * @property {number} max_tokens - Maximum number of tokens to generate.
- * @property {string} [system] - System prompt for the model.
- * @property {Message[]} messages - Messages to provide to the model.
- * @property {number} [temperature] - Amount of randomness to inject into the response.
- */
 
-// export interface Message {
-//   role: 'user' | 'assistant';
-//   content: Content[];
-// }
+interface ClaudeRequestBody {
+  anthropic_version: string;
+  max_tokens: number;
+  system?: string;
+  messages: Message[];
+  temperature?: number;
+}
 
-/**
- * @typedef {object} Message
- * @property {'user' | 'assistant'} role - Role of the message sender.
- * @property {Content[]} content - Content of the message.
- */
+interface Message {
+  role: 'user' | 'assistant';
+  content: Content[];
+}
+
+interface Content {
+  text: string;
+  type: string;
+}
+
+
+interface BedRockConfig {
+  region: string;
+  modelId: string;
+  credentials: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    sessionToken: string;
+  };
+}

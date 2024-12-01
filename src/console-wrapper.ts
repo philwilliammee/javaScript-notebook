@@ -1,27 +1,30 @@
 export class ConsoleWrapper {
+  private logs: string[];
+  private originalConsole: { [key: string]: (...args: any[]) => void };
+
   constructor() {
     this.logs = [];
+    this.originalConsole = {};
     this.setupConsoleOverrides();
   }
 
-  clear() {
+  clear(): void {
     this.logs = [];
   }
 
-  getLogs() {
+  getLogs(): string {
     return this.logs.join('\n');
   }
 
-  setupConsoleOverrides() {
-    const methods = ['log', 'info', 'warn', 'error'];
-    this.originalConsole = {};
+  private setupConsoleOverrides(): void {
+    const methods: Array<keyof Console> = ['log', 'info', 'warn', 'error'];
 
     methods.forEach(method => {
-      this.originalConsole[method] = console[method];
-      console[method] = (...args) => {
+      this.originalConsole[method] = console[method].bind(console);
+      console[method] = (...args: any[]) => {
         // Call original console method
         this.originalConsole[method].apply(console, args);
-        
+
         // Format and store the log
         const formattedArgs = args.map(arg => {
           if (typeof arg === 'object') {
@@ -29,15 +32,15 @@ export class ConsoleWrapper {
           }
           return String(arg);
         });
-        
+
         this.logs.push(formattedArgs.join(' '));
       };
     });
   }
 
-  restore() {
+  restore(): void {
     Object.keys(this.originalConsole).forEach(method => {
-      console[method] = this.originalConsole[method];
+      console[method as keyof Console] = this.originalConsole[method];
     });
   }
 }

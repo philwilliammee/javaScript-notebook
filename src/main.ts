@@ -1,4 +1,4 @@
-import { Notebook } from './notebook.js';
+import { Notebook } from './notebook';
 
 document.addEventListener('DOMContentLoaded', () => {
   new Notebook('notebook');

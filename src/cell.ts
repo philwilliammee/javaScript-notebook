@@ -1,14 +1,22 @@
-import { codeBotInstance } from "./code-bot.js";
-import { ConsoleWrapper } from "./console-wrapper.js";
+import { codeBotInstance } from "./code-bot";
+import { ConsoleWrapper } from "./console-wrapper";
+import { Notebook } from "./notebook";
 
 export class Cell {
-  constructor(id, notebook, initialCode = "") {
+  private id: number;
+  private notebook: Notebook;
+  private codeEditor: HTMLTextAreaElement | null;
+  private outputElement: HTMLElement | null;
+  private promptInput: HTMLInputElement | null;
+  element: HTMLElement;
+
+  constructor(id: number, notebook: Notebook, initialCode: string = "") {
     this.id = id;
     this.notebook = notebook;
     this.element = this.createElement();
-    this.codeEditor = this.element.querySelector(".code-editor");
-    this.outputElement = this.element.querySelector(".output-content");
-    this.promptInput = this.element.querySelector(".prompt-input");
+    this.codeEditor = this.element.querySelector(".code-editor") as HTMLTextAreaElement;
+    this.outputElement = this.element.querySelector(".output-content") as HTMLElement;
+    this.promptInput = this.element.querySelector(".prompt-input") as HTMLInputElement;
 
     if (initialCode) {
       this.codeEditor.value = initialCode;
@@ -17,7 +25,7 @@ export class Cell {
     this.setupEventListeners();
   }
 
-  createElement() {
+  private createElement(): HTMLElement {
     const cell = document.createElement("div");
     cell.className = "cell";
     cell.innerHTML = `
@@ -26,7 +34,7 @@ export class Cell {
         <button class="delete-btn">Delete</button>
       </div>
       <div class="prompt-section">
-        <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot...">
+        <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="Calculate and print Fibonacci sequence">
         <button class="btn btn-green generate-btn">Generate Code</button>
       </div>
       <textarea class="code-editor" placeholder="Enter your JavaScript code here..."></textarea>
@@ -42,14 +50,14 @@ export class Cell {
     return cell;
   }
 
-  setupEventListeners() {
-    const executeButton = this.element.querySelector(".execute-btn");
+  private setupEventListeners(): void {
+    const executeButton = this.element.querySelector(".execute-btn") as HTMLButtonElement;
     executeButton.addEventListener("click", () => this.executeCode());
 
-    const generateButton = this.element.querySelector(".generate-btn");
+    const generateButton = this.element.querySelector(".generate-btn") as HTMLButtonElement;
     generateButton.addEventListener("click", () => this.generateCode());
 
-    const deleteButton = this.element.querySelector(".delete-btn");
+    const deleteButton = this.element.querySelector(".delete-btn") as HTMLButtonElement;
     deleteButton.addEventListener("click", () => {
       this.element.dispatchEvent(
         new CustomEvent("cellDelete", {
@@ -60,8 +68,8 @@ export class Cell {
     });
   }
 
-  async generateCode() {
-    const prompt = this.promptInput.value.trim();
+  private async generateCode(): Promise<void> {
+    const prompt = this.promptInput?.value.trim();
     if (prompt) {
       const {
         VITE_AWS_REGION,
@@ -81,15 +89,21 @@ export class Cell {
       const codeBot = codeBotInstance;
       try {
         const { code, description } = await codeBot.generateCode(prompt);
-        this.codeEditor.value = code;
-        this.outputElement.textContent = `Code generated successfully:\n${description}`;
-      } catch (error) {
-        this.outputElement.textContent = `Error generating code: ${error.message}`;
+        if (this.codeEditor) {
+          this.codeEditor.value = code;
+        }
+        if (this.outputElement) {
+          this.outputElement.textContent = `Code generated successfully:\n${description}`;
+        }
+      } catch (error: any) {
+        if (this.outputElement) {
+          this.outputElement.textContent = `Error generating code: ${error.message}`;
+        }
       }
     }
   }
 
-  formatOutput(value) {
+  private formatOutput(value: any): string {
     if (value === undefined) return "undefined";
     if (value === null) return "null";
     if (typeof value === "function") return value.toString();
@@ -100,10 +114,10 @@ export class Cell {
     }
   }
 
-  async executeCode() {
+  private async executeCode(): Promise<void> {
     const consoleWrapper = new ConsoleWrapper();
     try {
-      const code = this.codeEditor.value;
+      const code = this.codeEditor?.value || "";
       const result = await this.notebook.executeInContext(code);
 
       // Get console output
@@ -119,9 +133,13 @@ export class Cell {
         output += `Return value: ${this.formatOutput(result)}`;
       }
 
-      this.outputElement.textContent = output || "No output";
-    } catch (error) {
-      this.outputElement.textContent = `Error: ${error.message}`;
+      if (this.outputElement) {
+        this.outputElement.textContent = output || "No output";
+      }
+    } catch (error: any) {
+      if (this.outputElement) {
+        this.outputElement.textContent = `Error: ${error.message}`;
+      }
     } finally {
       consoleWrapper.restore();
     }

@@ -34,7 +34,6 @@ class BedrockService {
 
     try {
       const response = await this.client.send(command);
-      console.log(response.body);
       return JSON.parse(new TextDecoder("utf-8").decode(response.body));
     } catch (error) {
       console.error("Error invoking model:", error);

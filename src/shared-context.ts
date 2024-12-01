@@ -1,9 +1,10 @@
 export class SharedContext {
+  context: Object;
   constructor() {
     this.context = {};
   }
 
-  evaluate(code) {
+  evaluate(code: string) {
     try {
       // Create a function that will execute in the context
       const executeInContext = new Function(...Object.keys(this.context), `
@@ -23,7 +24,7 @@ export class SharedContext {
         ${code}
         return { ${this.extractVariableNames(code).join(', ')} };
       `);
-      
+
       try {
         Object.assign(newVars, varExtractor(...Object.values(this.context)));
       } catch (e) {
@@ -35,16 +36,17 @@ export class SharedContext {
       Object.assign(this.context, newVars);
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Execution error: ${error.message}`);
     }
   }
 
-  extractVariableNames(code) {
+  // Extract variable names from the code and return them as an array
+  extractVariableNames(code: string ): string[] {
     const variablePattern = /(?:let|const|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
     const functionPattern = /function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
-    const variables = new Set();
-    
+    const variables = new Set<string>();
+
     let match;
     while ((match = variablePattern.exec(code)) !== null) {
       variables.add(match[1]);
