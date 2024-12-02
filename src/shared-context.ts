@@ -59,21 +59,21 @@ export class SharedContext {
       // Create a dummy console object to suppress output
       const dummyConsole = {
         log: () => {},
-        warn: () => {},
-        error: () => {},
-        info: () => {},
-        debug: () => {},
-        trace: () => {},
-        dir: () => {},
-        time: () => {},
-        timeEnd: () => {},
-        assert: () => {},
+        // warn: () => {},
+        // error: () => {},
+        // info: () => {},
+        // debug: () => {},
+        // trace: () => {},
+        // dir: () => {},
+        // time: () => {},
+        // timeEnd: () => {},
+        // assert: () => {},
         // Add other console methods if necessary
       };
 
       Object.assign(newVars, varExtractor(...Object.values(this.context), dummyConsole));
     } catch (error) {
-      console.warn('Variable extraction warning:', error);
+      // console.warn('Variable extraction warning:', error);
     }
 
     // Merge new variables into the context

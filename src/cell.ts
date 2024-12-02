@@ -55,11 +55,17 @@ export class Cell {
         <button class="btn btn-green upload-btn">Upload CSV</button>
       </div>
       <div class="prompt-section">
-        <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="">
-        <button class="btn btn-green generate-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
-          Generate Code
-        </button>
+        <form class="prompt-form">
+          <input type="text" class="prompt-input" placeholder="Enter your prompt for Code-Bot..." value="">
+          <button type="submit" class="btn btn-green generate-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 8v8"></path>
+              <path d="M8 12h8"></path>
+            </svg>
+            Generate Code
+          </button>
+        </form>
       </div>
       <div class="monaco-editor-wrapper">
         <div class="monaco-editor-container"></div>
@@ -124,9 +130,6 @@ export class Cell {
     const uploadButton = this.element.querySelector(".upload-btn") as HTMLButtonElement;
     uploadButton.addEventListener("click", () => this.uploadFile());
 
-    const generateButton = this.element.querySelector(".generate-btn") as HTMLButtonElement;
-    generateButton.addEventListener("click", () => this.generateCode());
-
     const deleteButton = this.element.querySelector(".delete-btn") as HTMLButtonElement;
     deleteButton.addEventListener("click", () => {
       this.element.dispatchEvent(
@@ -136,7 +139,18 @@ export class Cell {
         })
       );
     });
+
+    const form = this.element.querySelector(".prompt-form") as HTMLFormElement;
+    if (form) {
+      form.addEventListener("submit", (event: SubmitEvent) => {
+        console.log("Form submitted");
+        event.preventDefault(); // Prevent the default form submission
+        this.generateCode()
+      });
+    }
   }
+
+
 
   private uploadFile(): void {
     if (this.fileInput?.files?.length) {
@@ -195,9 +209,20 @@ export class Cell {
     const consoleWrapper = new ConsoleWrapper();
     try {
       const code = this.codeEditor?.getValue() || "";
+
+      // Add the executed code to the chat context as a user message
+      codeBotInstance.addToChatContext({
+        role: "user",
+        content: [{ text: `Executing code:\n${code}`, type: "text" }],
+      });
+
+      // Execute the code within the shared context
       const result = await this.notebook.executeInContext(code);
+
+      // Get the console output
       const consoleOutput = consoleWrapper.getLogs();
 
+      // Prepare the formatted output
       let output = "";
       if (consoleOutput) {
         output += consoleOutput;
@@ -207,17 +232,48 @@ export class Cell {
         output += `Return value: ${this.formatOutput(result)}`;
       }
 
+          // Truncate output if necessary
+    let truncated = false;
+    if (output.length > 1000) {
+      output = output.slice(0, 1000) + "...";
+      truncated = true;
+    }
+
+    // Add the execution result to the chat context as an assistant message
+    codeBotInstance.addToChatContext({
+      role: "assistant",
+      content: [
+        {
+          text: `Execution result:\n${output || "No output"}${
+            truncated ? "\n(Note: Output has been truncated to 1000 characters.)" : ""
+          }`,
+          type: "text",
+        },
+      ],
+    });
+
+      // Display the output in the cell
       if (this.outputElement) {
         this.outputElement.textContent = output || "No output";
       }
     } catch (error: any) {
+      const errorMessage = `Error: ${error.message}`;
+
+      // Add the error message to the chat context as an assistant message
+      codeBotInstance.addToChatContext({
+        role: "assistant",
+        content: [{ text: errorMessage, type: "text" }],
+      });
+
+      // Display the error in the cell
       if (this.outputElement) {
-        this.outputElement.textContent = `Error: ${error.message}`;
+        this.outputElement.textContent = errorMessage;
       }
     } finally {
       consoleWrapper.restore();
     }
   }
+
 
   private formatOutput(value: any): string {
     if (value === undefined) return "undefined";

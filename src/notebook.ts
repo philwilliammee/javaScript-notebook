@@ -24,6 +24,21 @@ export class Notebook {
     if (addCellButton) {
       addCellButton.addEventListener('click', () => this.addCell());
     }
+
+    const closeChartButton = document.getElementById('closeChart');
+    const chartContainer = document.getElementById('myChartContainer');
+    const chartElement = document.getElementById('myChart');
+
+    if (closeChartButton && chartContainer && chartElement) {
+      closeChartButton.addEventListener('click', () => {
+        // Clear the chart content
+        chartElement.innerHTML = "";
+
+        // Optionally hide the container
+        // chartContainer.style.display = "none";
+      });
+    }
+
     if (this.container) {
       this.container.addEventListener('cellDelete', (event: Event) => {
         const customEvent = event as CustomEvent<{ id: number }>;
@@ -61,7 +76,6 @@ export class Notebook {
     const variableName = `file_${name.replace(/[^a-zA-Z0-9]/g, '_')}`; // Safe variable name
     this.sharedContext.evaluate(`var ${variableName} = ${JSON.stringify(data)};`);
   }
-
 
   // File management methods
   public addFile(name: string, data: any): void {

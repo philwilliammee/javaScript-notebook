@@ -85,4 +85,23 @@ example prompts:
 
 Solve and chart the equation: x² + 5x - 6 = 0
 
+graph the equation as a function, show the values where x = 0.
+
 generate an example "function" chart with a height of 400.
+
+
+An airplane accelerates down a runway at 3.20 m/s2 for 32.8 s until is finally lifts off the ground. Determine the distance traveled before takeoff.
+- Answer 1720
+
+With what speed in miles/hr (1 m/s = 2.23 mi/hr) must an object be thrown to reach a height of 91.5 m (equivalent to one football field)? Assume negligible air resistance.
+- Answer: vi = 94.4 mi/hr
+
+A surveyor wants to know the height of a skyscraper. He places his inclinometer on a tripod  1 m 1m from the ground. At a distance of  50 m 50m from the skyscraper, he records an angle of elevation of  8 2 ∘ 82  ∘  .  What is the height of the skyscraper? Give your answer to one decimal place.
+- 356.8m
+
+
+ A builder is constructing a roof. The wood he is using for the sloped section of the roof is 4m long and the peak of the roof needs to be 2m high. What angle should the piece of wood make with the base of the roof?
+ - The wood should make an angle of 30° with the base of the roof.
+
+
+generate a function that calculates the fibinaci sequence 1 tp 1000 and chart it.
